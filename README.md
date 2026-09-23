@@ -1,7 +1,15 @@
-# Tauri + React + Typescript
+# MiddleSpider
+A simple software made to help memorize files
 
-This template should help get you started developing with Tauri, React and Typescript in Vite.
+### Challenge :
 
-## Recommended IDE Setup
+### MVP : 
 
-- [VS Code](https://code.visualstudio.com/) + [Tauri](https://marketplace.visualstudio.com/items?itemName=tauri-apps.tauri-vscode) + [rust-analyzer](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer)
+
+### Nice to have : 
+
+
+### Project is complete when :
+- MVP is 100% implemented
+- The service have been running for 2 weeks without critical errors
+- Ideally, achieves 98% uptime or more
