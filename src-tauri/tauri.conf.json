@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "wlarping",
+  "productName": "WLarp",
   "version": "0.1.0",
-  "identifier": "wlarping-v0",
+  "identifier": "com.wlarp.app",
   "build": {
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:1420",
@@ -12,13 +12,20 @@
   "app": {
     "windows": [
       {
-        "title": "wlarping",
-        "width": 800,
-        "height": 600
+        "title": "WLarp",
+        "width": 1180,
+        "height": 740,
+        "minWidth": 900,
+        "minHeight": 600,
+        "center": true
       }
     ],
     "security": {
-      "csp": null
+      "csp": null,
+      "assetProtocol": {
+        "enable": true,
+        "scope": ["$APPDATA/**"]
+      }
     }
   },
   "bundle": {

@@ -22,3 +22,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Données locales (ne pas versionner de nouveaux fichiers ici ; wlarp_files/ est volontairement suivi)
+wlarp_files/data.sqlite-*
+*.orig
