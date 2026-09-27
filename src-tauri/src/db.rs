@@ -405,6 +405,30 @@ pub fn doc_delete_children(conn: &Connection, doc_id: &str) -> rusqlite::Result<
     Ok(())
 }
 
+/// Mode « Tout supprimer » : supprime les dossiers (sous-arbre) ET leur contenu.
+/// Ordre : réponses → questions → transcriptions/images → supports → docs → folders.
+/// Retourne les ids des cours supprimés pour que l'appelant purge les fichiers.
+pub fn delete_folders_content(conn: &Connection, subtree: &[String]) -> rusqlite::Result<Vec<String>> {
+    let placeholders = subtree.iter().map(|_| "?").collect::<Vec<_>>().join(",");
+    let doc_ids: Vec<String> = conn
+        .prepare(&format!("SELECT id FROM docs WHERE folder_id IN ({placeholders})"))?
+        .query_map(rusqlite::params_from_iter(subtree.iter()), |r| r.get(0))?
+        .collect::<rusqlite::Result<Vec<_>>>()?;
+    for d in &doc_ids {
+        doc_delete_children(conn, d)?;
+    }
+    conn.execute(
+        &format!("DELETE FROM docs WHERE folder_id IN ({placeholders})"),
+        rusqlite::params_from_iter(subtree.iter()),
+    )?;
+    conn.execute(
+        &format!("DELETE FROM folders WHERE id IN ({placeholders})"),
+        rusqlite::params_from_iter(subtree.iter()),
+    )?;
+    Ok(doc_ids)
+}
+
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -454,6 +478,48 @@ mod tests {
         );
         assert!(r.is_err());
     }
+
+    #[test]
+    fn delete_folders_content_cascades_all_rows() {
+        let mut conn = Connection::open_in_memory().unwrap();
+        for p in pragmas() {
+            conn.execute_batch(p).unwrap();
+        }
+        open_schema(&mut conn).unwrap();
+        conn.execute("INSERT INTO folders VALUES('f1','root','L2','t')", []).unwrap();
+        conn.execute("INSERT INTO folders VALUES('f2','f1','L3','t')", []).unwrap();
+        conn.execute(
+            "INSERT INTO docs(id,folder_id,title,status,created_at,updated_at) VALUES('d1','f2','C1','importe','t','t')",
+            [],
+        )
+        .unwrap();
+        conn.execute(
+            "INSERT INTO supports(id,doc_id,rel_path,file_name,media_type,mime,size,hash,sort_order,created_at) VALUES('s1','d1','r','f','pdf','application/pdf',1,'h',0,'t')",
+            [],
+        )
+        .unwrap();
+        conn.execute(
+            "INSERT INTO questions(id,doc_id,front_md,back_md,created_at,updated_at) VALUES('q1','d1','q','a','t','t')",
+            [],
+        )
+        .unwrap();
+        conn.execute(
+            "INSERT INTO answers(id,question_id,session_id,given_md,rating,created_at) VALUES('a1','q1','sess','',4,'t')",
+            [],
+        )
+        .unwrap();
+        let deleted = delete_folders_content(&conn, &["f1".into(), "f2".into()]).unwrap();
+        assert_eq!(deleted, vec!["d1".to_string()]);
+        let n: i64 = conn
+            .query_row("SELECT COUNT(*) FROM folders WHERE id != 'root'", [], |r| r.get(0))
+            .unwrap();
+        assert_eq!(n, 0, "dossiers restants");
+        for t in ["docs", "supports", "questions", "answers"] {
+            let n: i64 = conn.query_row(&format!("SELECT COUNT(*) FROM {t}"), [], |r| r.get(0)).unwrap();
+            assert_eq!(n, 0, "lignes restantes dans {t}");
+        }
+    }
+
 
     #[test]
     fn settings_roundtrip() {

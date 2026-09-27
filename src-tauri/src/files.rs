@@ -137,7 +137,7 @@ pub fn create_doc_row(
     conn.execute(
         "INSERT INTO docs(id, folder_id, title, status, created_at, updated_at) \
          VALUES(?1, ?2, ?3, 'importe', ?4, ?4)",
-        params![id, folder_id, sanitize(title), t, t],
+        params![id, folder_id, sanitize(title), t],
     )?;
     fs::create_dir_all(files_dir.join("uploads").join(&id))?;
     doc_dto_by_id(conn, &id)
@@ -285,4 +285,29 @@ pub fn import_paths(conn: &Connection, app_data: &Path, paths: &[String]) -> Res
 pub fn delete_upload_dir(app_data: &Path, doc_id: &str) {
     let dir: PathBuf = app_data.join("files").join("uploads").join(doc_id);
     let _ = fs::remove_dir_all(dir);
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rusqlite::Connection;
+
+    #[test]
+    fn create_doc_row_binds_correct_param_count() {
+        let mut conn = Connection::open_in_memory().unwrap();
+        db::open_schema(&mut conn).unwrap();
+        let dir = std::env::temp_dir().join(format!("wlarp-test-{}", db::new_id()));
+        let dto = create_doc_row(&conn, &dir, "root", "Cours_1").unwrap();
+        assert_eq!(dto.title, "Cours_1");
+        assert_eq!(dto.status, "importe");
+        let (c, u): (String, String) = conn
+            .query_row(
+                "SELECT created_at, updated_at FROM docs WHERE id = ?1",
+                [&dto.id],
+                |r| Ok((r.get(0)?, r.get(1)?)),
+            )
+            .unwrap();
+        assert!(!c.is_empty() && c == u);
+        let _ = fs::remove_dir_all(&dir);
+    }
 }

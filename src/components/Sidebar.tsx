@@ -217,9 +217,13 @@ export default function Sidebar() {
               <Button
                 onClick={async () => {
                   setDel(null);
-                  await api.deleteFolder(del.id, "recycle");
-                  if (selectedFolderId === del.id) selectFolder("root");
-                  bump();
+                  try {
+                    await api.deleteFolder(del.id, "recycle");
+                    if (selectedFolderId === del.id) selectFolder("root");
+                    bump();
+                  } catch (e) {
+                    setToast(errText(e));
+                  }
                 }}
               >
                 Garder les cours
@@ -228,9 +232,13 @@ export default function Sidebar() {
                 kind="danger"
                 onClick={async () => {
                   setDel(null);
-                  await api.deleteFolder(del.id, "content");
-                  if (selectedFolderId === del.id) selectFolder("root");
-                  bump();
+                  try {
+                    await api.deleteFolder(del.id, "content");
+                    if (selectedFolderId === del.id) selectFolder("root");
+                    bump();
+                  } catch (e) {
+                    setToast(errText(e));
+                  }
                 }}
               >
                 Tout supprimer

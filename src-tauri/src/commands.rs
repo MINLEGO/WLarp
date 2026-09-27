@@ -146,16 +146,7 @@ pub fn delete_folder(id: String, mode: String, state: State<AppState>) -> Result
             rusqlite::params_from_iter(std::iter::once(&dest).chain(subtree.iter())),
         )?;
     } else {
-        let doc_ids: Vec<String> = conn
-            .prepare(&format!(
-                "SELECT id FROM docs WHERE folder_id IN ({placeholders})"
-            ))?
-            .query_map(rusqlite::params_from_iter(subtree.iter()), |r| r.get(0))?
-            .collect::<rusqlite::Result<Vec<_>>>()?;
-        conn.execute(
-            &format!("DELETE FROM folders WHERE id IN ({placeholders})"),
-            rusqlite::params_from_iter(subtree.iter()),
-        )?;
+        let doc_ids = db::delete_folders_content(&conn, &subtree)?;
         for d in doc_ids {
             files::delete_upload_dir(&app_data, &d);
         }
