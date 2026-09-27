@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { open } from "@tauri-apps/plugin-dialog";
-import { api, errText } from "../lib/ipc";
+import { api, errText, isTauri } from "../lib/ipc";
 import type { DocDto } from "../lib/types";
 import { useApp } from "../stores";
 import { Button, Confirm, Modal, Prompt } from "./ui";
@@ -40,6 +40,10 @@ export default function CoursesPane() {
   }, [docs]);
 
   async function importHere() {
+    if (!isTauri) {
+      setToast("Importation disponible dans l’application desktop");
+      return;
+    }
     const picked = await open({
       multiple: true,
       title: "Importer des supports",

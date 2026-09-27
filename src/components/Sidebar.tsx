@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { open } from "@tauri-apps/plugin-dialog";
-import { api, errText } from "../lib/ipc";
+import { api, errText, isTauri } from "../lib/ipc";
 import type { FolderDto } from "../lib/types";
 import { useApp } from "../stores";
 import { Button, Prompt } from "./ui";
@@ -55,11 +55,21 @@ export default function Sidebar() {
 
   const children = useMemo(() => {
     const map: Record<string, FolderDto[]> = {};
-    for (const f of folders) (map[f.parentId ?? "root"] ??= []).push(f);
+    for (const f of folders) {
+      if (f.id === "root") continue; // la ligne synthétique « root » de la BDD EST la racine de l'arbre
+      (map[f.parentId ?? "root"] ??= []).push(f);
+    }
     return map;
   }, [folders]);
 
+  /** Ligne réelle de « Racine » (nom + comptage fournis par le backend), sinon le vide statique. */
+  const rootFolder = folders.find((f) => f.id === ROOT.id) ?? ROOT;
+
   async function importInto(folderId: string) {
+    if (!isTauri) {
+      setToast("Importation disponible dans l’application desktop");
+      return;
+    }
     const sel = await open({
       multiple: true,
       title: "Importer des supports",
@@ -85,6 +95,7 @@ export default function Sidebar() {
   }
 
   function row(f: FolderDto, depth: number) {
+    if (depth > 32) return null; // garde-fou anti-cycle dans la hierarchie
     const kids = children[f.id] ?? [];
     const isOpen = expanded[f.id];
     return (
@@ -136,8 +147,7 @@ export default function Sidebar() {
         </button>
       </div>
       <div className="min-h-0 flex-1 overflow-auto">
-        {row(ROOT, 0)}
-        {(children["root"] ?? []).map((f) => row(f, 1))}
+        {row(rootFolder, 0)}
       </div>
       {menu && (
         <div

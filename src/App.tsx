@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { getCurrentWebview } from "@tauri-apps/api/webview";
 import { useApp } from "./stores";
-import { api, errText } from "./lib/ipc";
+import { api, errText, isTauri } from "./lib/ipc";
 import Sidebar from "./components/Sidebar";
 import CoursesPane from "./components/CoursesPane";
 import EditorPane from "./components/EditorPane";
@@ -36,6 +36,7 @@ export default function App() {
 
   /** Drop natif OS : les chemins de fichiers arrivent par Tauri, pas par la webview. */
   useEffect(() => {
+    if (!isTauri) return; // prévisualisation navigateur : pas d'IPC, ne pas crasher
     const reg = getCurrentWebview().onDragDropEvent((e) => {
       if (e.payload.type === "enter" || e.payload.type === "over") {
         setDragging(true);

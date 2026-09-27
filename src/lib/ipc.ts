@@ -1,4 +1,9 @@
 import { invoke, convertFileSrc } from "@tauri-apps/api/core";
+
+/** true seulement dans la webview Tauri (F12/navigateur pur → false). */
+export const isTauri =
+  typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
+
 import type {
   DocDetail,
   DocDto,
